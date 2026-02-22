@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHRED — Daily Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --card: #1a1a1a;
+    --accent: #e8ff3a;
+    --accent2: #ff4e1a;
+    --text: #f0f0f0;
+    --muted: #555;
+    --done-bg: #1e2a00;
+    --done-border: #4a6800;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 18px 20px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 3px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .date-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .streak-badge {
+    background: var(--accent);
+    color: #000;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.82rem;
+    letter-spacing: 1.5px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    display: none;
+  }
+
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .progress-bar-bg {
+    flex: 1;
+    height: 5px;
+    background: #2a2a2a;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 99px;
+    transition: width 0.4s cubic-bezier(.22,1,.36,1);
+    width: 0%;
+  }
+
+  .progress-pct {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    color: var(--accent);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .tabs {
+    display: flex;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px 8px;
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.95rem;
+    letter-spacing: 2px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 20px 16px 0;
+  }
+
+  .section { margin-bottom: 18px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  .section-icon { font-size: 1.1rem; }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 2.5px;
+    color: var(--muted);
+  }
+
+  .item {
+    background: var(--card);
+    border: 1.5px solid #242424;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .item:active { transform: scale(0.98); }
+
+  .item.done { background: var(--done-bg); border-color: var(--done-border); }
+  .item.done .item-text { color: #7aaa00; }
+  .item.done .item-sub { color: #4a6800; }
+
+  .checkbox {
+    width: 22px; height: 22px;
+    border: 2px solid #333;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+    transition: border-color 0.2s, background 0.2s;
+    font-size: 13px;
+  }
+
+  .item.done .checkbox { background: var(--accent); border-color: var(--accent); color: #000; }
+
+  .item-body { flex: 1; }
+
+  .item-text {
+    font-size: 0.9rem; font-weight: 500; line-height: 1.4;
+    color: #ddd; transition: color 0.2s;
+  }
+
+  .item-sub {
+    font-size: 0.75rem; color: var(--muted);
+    margin-top: 3px; line-height: 1.4; transition: color 0.2s;
+  }
+
+  .warning-item .item-text { color: #ff9966; }
+  .warning-item.done .item-text { color: #7aaa00; }
+
+  .reflection-card {
+    background: var(--card);
+    border: 1.5px solid #242424;
+    border-radius: var(--radius);
+    padding: 16px; margin-bottom: 8px;
+  }
+
+  .reflection-q { font-size: 0.85rem; color: #bbb; margin-bottom: 10px; }
+
+  .rating-row { display: flex; gap: 8px; }
+
+  .rating-btn {
+    flex: 1; padding: 8px 4px;
+    border-radius: 8px; border: 1.5px solid #333;
+    background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    cursor: pointer; transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .rating-btn.active { border-color: var(--accent); color: var(--accent); background: #1e2a00; }
+  .rating-btn.active-red { border-color: var(--accent2); color: var(--accent2); background: #2a0f00; }
+
+  .celebrate {
+    display: none; text-align: center;
+    padding: 20px; background: var(--done-bg);
+    border: 1.5px solid var(--done-border);
+    border-radius: var(--radius); margin-top: 16px;
+  }
+
+  .celebrate.show { display: block; }
+
+  .celebrate h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem; color: var(--accent); letter-spacing: 3px;
+  }
+
+  .celebrate p { font-size: 0.82rem; color: #7aaa00; margin-top: 6px; }
+
+  .btn {
+    width: 100%; margin-top: 20px;
+    padding: 13px; background: transparent;
+    border: 1.5px solid #333; border-radius: var(--radius);
+    color: var(--muted); font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.95rem; letter-spacing: 2px;
+    cursor: pointer; transition: all 0.2s;
+    display: block; text-align: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* HISTORY */
+  .history-empty {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted); font-size: 0.85rem; line-height: 1.8;
+  }
+
+  .history-empty .big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem; color: #2a2a2a;
+    letter-spacing: 3px; display: block; margin-bottom: 8px;
+  }
+
+  .history-day {
+    background: var(--card);
+    border: 1.5px solid #242424;
+    border-radius: var(--radius);
+    margin-bottom: 12px; overflow: hidden;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+
+  .history-day:hover { border-color: #3a3a3a; }
+
+  .history-day-header {
+    display: flex; align-items: center;
+    justify-content: space-between; padding: 14px 16px;
+  }
+
+  .history-date {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem; letter-spacing: 2px; color: #ddd;
+  }
+
+  .history-score { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+
+  .history-pct { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; }
+  .history-pct.perfect { color: var(--accent); }
+  .history-pct.good { color: #7aaa00; }
+  .history-pct.ok { color: #ffaa33; }
+  .history-pct.low { color: var(--accent2); }
+
+  .history-bar-bg { height: 3px; background: #222; }
+
+  .history-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+  }
+
+  .history-detail { display: none; padding: 0 16px 14px; border-top: 1px solid #222; }
+  .history-detail.open { display: block; }
+
+  .history-detail-title {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 2px; font-size: 0.78rem;
+    color: var(--muted); margin: 12px 0 8px;
+  }
+
+  .history-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .chip {
+    font-size: 0.72rem; padding: 4px 10px;
+    border-radius: 99px; border: 1px solid #333; color: #888;
+  }
+
+  .chip.done-chip { border-color: var(--done-border); color: #7aaa00; background: var(--done-bg); }
+  .chip.miss-chip { border-color: #3a1800; color: #cc5500; background: #1a0a00; }
+
+  .history-reflections { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+
+  .ref-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; }
+  .ref-label { color: var(--muted); }
+  .ref-val { font-weight: 500; }
+  .ref-yes { color: #7aaa00; }
+  .ref-mostly { color: #ffaa33; }
+  .ref-no { color: var(--accent2); }
+
+  /* STATS */
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--card); border: 1.5px solid #242424;
+    border-radius: var(--radius); padding: 16px; text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem; line-height: 1;
+    color: var(--accent); letter-spacing: 2px;
+  }
+
+  .stat-label {
+    font-size: 0.7rem; color: var(--muted);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-top: 5px;
+  }
+
+  .weekly-grid { display: flex; gap: 6px; margin-bottom: 18px; }
+
+  .week-col {
+    flex: 1; display: flex;
+    flex-direction: column; align-items: center; gap: 5px;
+  }
+
+  .week-bar-bg {
+    width: 100%; height: 80px;
+    background: #1a1a1a; border-radius: 6px;
+    position: relative; overflow: hidden; border: 1px solid #242424;
+  }
+
+  .week-bar-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(0deg, var(--accent2), var(--accent));
+    border-radius: 6px 6px 0 0;
+    transition: height 0.5s cubic-bezier(.22,1,.36,1);
+  }
+
+  .week-day-label { font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; }
+  .week-pct-label { font-family: 'Bebas Neue', sans-serif; font-size: 0.78rem; color: #555; }
+
+  .danger-btn {
+    width: 100%; margin-top: 10px;
+    padding: 11px; background: transparent;
+    border: 1px solid #222; border-radius: var(--radius);
+    color: #333; font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.85rem; letter-spacing: 2px;
+    cursor: pointer; transition: all 0.2s; display: block;
+  }
+
+  .danger-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <h1>SHRED <span id="streakBadge" class="streak-badge"></span></h1>
+      <div class="date-label" id="dateLabel"></div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:#ddd;" id="doneCount">0/0</div>
+      <div style="font-size:0.7rem;color:var(--muted);letter-spacing:1px;">DONE</div>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-pct" id="progressPct">0%</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('today')">TODAY</div>
+    <div class="tab" onclick="switchTab('history')">HISTORY</div>
+    <div class="tab" onclick="switchTab('stats')">STATS</div>
+  </div>
+</header>
+
+<!-- TODAY -->
+<div id="view-today" class="view active">
+<div class="container">
+
+  <div class="section">
+    <div class="section-header"><span class="section-icon">🌅</span><span class="section-title">Morning</span></div>
+    <div class="item" data-id="m1" data-label="Breakfast" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body">
+        <div class="item-text">Breakfast — 2 boiled eggs + 2 toast + light milk</div>
+        <div class="item-sub">7:15am · Protein + carbs to kick off the day</div>
+      </div>
+    </div>
+    <div class="item" data-id="m2" data-label="Morning water" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Drink 250–300 mL water</div><div class="item-sub">First thing — hydration before anything else</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-icon">🍓</span><span class="section-title">Recess Snack</span></div>
+    <div class="item" data-id="r1" data-label="Recess snack" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Yopro / Greek yogurt + berries + ⅓ cup oats</div><div class="item-sub">Slow-release carbs + protein = no crash</div></div>
+    </div>
+    <div class="item" data-id="r2" data-label="Recess water" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Drink 250–300 mL water</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-icon">🥪</span><span class="section-title">Lunch</span></div>
+    <div class="item" data-id="l1" data-label="Lunch" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Turkey sandwich + apple</div><div class="item-sub">Protein + fibre check ✔</div></div>
+    </div>
+    <div class="item" data-id="l2" data-label="Lunch water" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Drink water with meal</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-icon">🚌</span><span class="section-title">Afternoon / Bus</span></div>
+    <div class="item" data-id="a1" data-label="Afternoon snack" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Yopro + berries (pre-portioned)</div><div class="item-sub">Optional: 1 small banana if still hungry</div></div>
+    </div>
+    <div class="item warning-item" data-id="a2" data-label="No unplanned treats" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">No unplanned muffins / baked goods</div><div class="item-sub">Save treats for a controlled weekend — stay locked in</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-icon">⚡</span><span class="section-title">Pre-Gym / Pre-Soccer</span></div>
+    <div class="item" data-id="pt1" data-label="Pre-training snack" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Small fruit OR 1 scoop whey (if needed)</div><div class="item-sub">Only if energy feels low</div></div>
+    </div>
+    <div class="item" data-id="pt2" data-label="Pre-training water" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">150–250 mL water</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-icon">🏋️</span><span class="section-title">Training</span></div>
+    <div class="item" data-id="t1" data-label="Session done" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Gym / Soccer — session done</div></div>
+    </div>
+    <div class="item" data-id="t2" data-label="Core finisher" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Core finisher completed</div><div class="item-sub">If scheduled today</div></div>
+    </div>
+    <div class="item" data-id="t3" data-label="Training hydration" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">500+ mL water during training</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-icon">🍽️</span><span class="section-title">Dinner</span></div>
+    <div class="item" data-id="d1" data-label="Plate order" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Protein first on the plate</div><div class="item-sub">Then fill half the plate with veg, carbs last</div></div>
+    </div>
+    <div class="item" data-id="d2" data-label="Pre-dinner water" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">300–400 mL water before eating</div></div>
+    </div>
+    <div class="item" data-id="d3" data-label="Mindful eating" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Eat slowly — chew, pause, don't rush</div><div class="item-sub">No seconds unless genuinely hungry</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-icon">🌙</span><span class="section-title">Evening</span></div>
+    <div class="item" data-id="e1" data-label="Evening snack control" onclick="toggle(this)">
+      <div class="checkbox">✓</div>
+      <div class="item-body"><div class="item-text">Evening snack only if truly hungry</div><div class="item-sub">Fruit OR Yopro / whey only — nothing else</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-icon">📊</span><span class="section-title">Daily Reflection</span></div>
+    <div class="reflection-card">
+      <div class="reflection-q">Did I stick to the snack plan?</div>
+      <div class="rating-row">
+        <button class="rating-btn" data-group="q1" data-val="yes" onclick="rate(this,'yes')">✅ Yes</button>
+        <button class="rating-btn" data-group="q1" data-val="mostly" onclick="rate(this,'mostly')">🟡 Mostly</button>
+        <button class="rating-btn" data-group="q1" data-val="no" onclick="rate(this,'no')">❌ No</button>
+      </div>
+    </div>
+    <div class="reflection-card">
+      <div class="reflection-q">Did I control dinner portions?</div>
+      <div class="rating-row">
+        <button class="rating-btn" data-group="q2" data-val="yes" onclick="rate(this,'yes')">✅ Yes</button>
+        <button class="rating-btn" data-group="q2" data-val="mostly" onclick="rate(this,'mostly')">🟡 Mostly</button>
+        <button class="rating-btn" data-group="q2" data-val="no" onclick="rate(this,'no')">❌ No</button>
+      </div>
+    </div>
+    <div class="reflection-card">
+      <div class="reflection-q">Did I avoid mindless / extra snacking?</div>
+      <div class="rating-row">
+        <button class="rating-btn" data-group="q3" data-val="yes" onclick="rate(this,'yes')">✅ Yes</button>
+        <button class="rating-btn" data-group="q3" data-val="mostly" onclick="rate(this,'mostly')">🟡 Mostly</button>
+        <button class="rating-btn" data-group="q3" data-val="no" onclick="rate(this,'no')">❌ No</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="celebrate" id="celebrate">
+    <h2>DAY LOCKED IN 🔒</h2>
+    <p>Every item checked. You're building the body you want — one day at a time.</p>
+  </div>
+
+  <button class="btn" onclick="resetAll()">↺ SAVE & START NEW DAY</button>
+
+</div>
+</div>
+
+<!-- HISTORY -->
+<div id="view-history" class="view">
+<div class="container">
+  <div id="historyList"></div>
+  <button class="danger-btn" onclick="clearHistory()">CLEAR ALL HISTORY</button>
+</div>
+</div>
+
+<!-- STATS -->
+<div id="view-stats" class="view">
+<div class="container">
+  <div class="stats-grid" id="statsGrid"></div>
+  <div class="section-header" style="margin-bottom:10px">
+    <span class="section-icon">📅</span>
+    <span class="section-title">Last 7 Days</span>
+  </div>
+  <div class="weekly-grid" id="weeklyGrid"></div>
+</div>
+</div>
+
+<script>
+  const CURRENT_KEY = 'shred_current_v2';
+  const HISTORY_KEY = 'shred_history_v2';
+
+  const ALL_ITEMS = [...document.querySelectorAll('.item[data-id]')].map(el => ({
+    id: el.dataset.id, label: el.dataset.label
+  }));
+
+  const TOTAL = ALL_ITEMS.length;
+
+  const REFLECTION_LABELS = {
+    q1: 'Snack plan', q2: 'Dinner portions', q3: 'No mindless snacking'
+  };
+
+  let state = { date: getToday(), checked: {}, ratings: {}, streak: 0, celebrated: false };
+  let history = [];
+
+  function getToday() { return new Date().toDateString(); }
+
+  function loadAll() {
+    try {
+      const cs = localStorage.getItem(CURRENT_KEY);
+      if (cs) state = JSON.parse(cs);
+      const hs = localStorage.getItem(HISTORY_KEY);
+      if (hs) history = JSON.parse(hs);
+    } catch(e) {}
+  }
+
+  function saveAll() {
+    localStorage.setItem(CURRENT_KEY, JSON.stringify(state));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  }
+
+  function archiveToday() {
+    const done = ALL_ITEMS.filter(i => state.checked[i.id]).length;
+    if (done === 0 && Object.keys(state.ratings).length === 0) return;
+    if (history.find(d => d.date === state.date)) return;
+    history.unshift({
+      date: state.date,
+      checked: { ...state.checked },
+      ratings: { ...state.ratings },
+      done, total: TOTAL,
+      pct: Math.round((done / TOTAL) * 100)
+    });
+    if (history.length > 90) history = history.slice(0, 90);
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', ['today','history','stats'][i] === tab);
+    });
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + tab).classList.add('active');
+    if (tab === 'history') renderHistory();
+    if (tab === 'stats') renderStats();
+  }
+
+  function toggle(el) {
+    const id = el.dataset.id;
+    state.checked[id] = !state.checked[id];
+    el.classList.toggle('done', state.checked[id]);
+    saveAll();
+    updateProgress();
+  }
+
+  function rate(btn, val) {
+    const group = btn.dataset.group;
+    state.ratings[group] = val;
+    document.querySelectorAll(`[data-group="${group}"]`).forEach(b => b.classList.remove('active','active-red'));
+    btn.classList.add(val === 'no' ? 'active-red' : 'active');
+    saveAll();
+  }
+
+  function renderToday() {
+    if (state.date !== getToday()) {
+      archiveToday();
+      state = { date: getToday(), checked: {}, ratings: {}, streak: state.streak, celebrated: false };
+      saveAll();
+    }
+    ALL_ITEMS.forEach(({ id }) => {
+      const el = document.querySelector(`.item[data-id="${id}"]`);
+      if (el) el.classList.toggle('done', !!state.checked[id]);
+    });
+    Object.entries(state.ratings).forEach(([group, val]) => {
+      const btn = document.querySelector(`[data-group="${group}"][data-val="${val}"]`);
+      if (btn) btn.classList.add(val === 'no' ? 'active-red' : 'active');
+    });
+    updateStreak();
+    updateProgress();
+    const d = new Date();
+    document.getElementById('dateLabel').textContent =
+      d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+  }
+
+  function updateProgress() {
+    const done = ALL_ITEMS.filter(({ id }) => state.checked[id]).length;
+    const pct = Math.round((done / TOTAL) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('doneCount').textContent = `${done}/${TOTAL}`;
+    const cel = document.getElementById('celebrate');
+    if (done === TOTAL) {
+      cel.classList.add('show');
+      if (!state.celebrated) {
+        state.celebrated = true;
+        state.streak = (state.streak || 0) + 1;
+        updateStreak();
+        saveAll();
+      }
+    } else {
+      cel.classList.remove('show');
+    }
+  }
+
+  function updateStreak() {
+    const badge = document.getElementById('streakBadge');
+    if (state.streak > 0) {
+      badge.textContent = `🔥 ${state.streak}`;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function resetAll() {
+    if (!confirm('Save today to history and start fresh tomorrow?')) return;
+    archiveToday();
+    state = { date: getToday(), checked: {}, ratings: {}, streak: state.streak, celebrated: false };
+    saveAll();
+    ALL_ITEMS.forEach(({ id }) => {
+      const el = document.querySelector(`.item[data-id="${id}"]`);
+      if (el) el.classList.remove('done');
+    });
+    document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active','active-red'));
+    document.getElementById('celebrate').classList.remove('show');
+    updateProgress();
+  }
+
+  function renderHistory() {
+    const container = document.getElementById('historyList');
+    if (history.length === 0) {
+      container.innerHTML = `<div class="history-empty">
+        <span class="big">NO HISTORY YET</span>
+        Complete your first day and hit "Save & Start New Day" to archive it here.
+      </div>`;
+      return;
+    }
+    container.innerHTML = history.map((day, idx) => {
+      const pctClass = day.pct === 100 ? 'perfect' : day.pct >= 75 ? 'good' : day.pct >= 50 ? 'ok' : 'low';
+      const emoji = day.pct === 100 ? '🔒' : day.pct >= 75 ? '✅' : day.pct >= 50 ? '🟡' : '🔴';
+      const dateStr = new Date(day.date).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+      const checkedChips = ALL_ITEMS.filter(i => day.checked[i.id]).map(i => `<span class="chip done-chip">${i.label}</span>`).join('');
+      const missedChips = ALL_ITEMS.filter(i => !day.checked[i.id]).map(i => `<span class="chip miss-chip">${i.label}</span>`).join('');
+      const refRows = Object.entries(day.ratings || {}).map(([k, v]) => {
+        const cls = v === 'yes' ? 'ref-yes' : v === 'mostly' ? 'ref-mostly' : 'ref-no';
+        const lbl = v === 'yes' ? '✅ Yes' : v === 'mostly' ? '🟡 Mostly' : '❌ No';
+        return `<div class="ref-row"><span class="ref-label">${REFLECTION_LABELS[k]||k}</span><span class="ref-val ${cls}">${lbl}</span></div>`;
+      }).join('');
+      return `
+      <div class="history-day" onclick="toggleDetail(${idx})">
+        <div class="history-day-header">
+          <div>
+            <div class="history-date">${emoji} ${dateStr}</div>
+            <div class="history-score">${day.done} of ${day.total} items · tap to expand</div>
+          </div>
+          <div class="history-pct ${pctClass}">${day.pct}%</div>
+        </div>
+        <div class="history-bar-bg"><div class="history-bar-fill" style="width:${day.pct}%"></div></div>
+        <div class="history-detail" id="hd-${idx}">
+          ${checkedChips ? `<div class="history-detail-title">COMPLETED</div><div class="history-chips">${checkedChips}</div>` : ''}
+          ${missedChips ? `<div class="history-detail-title">MISSED</div><div class="history-chips">${missedChips}</div>` : ''}
+          ${refRows ? `<div class="history-detail-title">REFLECTION</div><div class="history-reflections">${refRows}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleDetail(idx) {
+    const el = document.getElementById('hd-' + idx);
+    if (el) el.classList.toggle('open');
+  }
+
+  function clearHistory() {
+    if (!confirm('Delete all saved history? This cannot be undone.')) return;
+    history = [];
+    saveAll();
+    renderHistory();
+  }
+
+  function renderStats() {
+    const totalDays = history.length;
+    const perfectDays = history.filter(d => d.pct === 100).length;
+    const avgPct = totalDays ? Math.round(history.reduce((s, d) => s + d.pct, 0) / totalDays) : 0;
+    const topMissed = (() => {
+      const counts = {};
+      history.forEach(day => {
+        ALL_ITEMS.forEach(i => { if (!day.checked[i.id]) counts[i.label] = (counts[i.label]||0)+1; });
+      });
+      const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+      return sorted[0] ? sorted[0][0] : '—';
+    })();
+
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="stat-num">${totalDays}</div><div class="stat-label">Days Logged</div></div>
+      <div class="stat-card"><div class="stat-num">${perfectDays}</div><div class="stat-label">Perfect Days</div></div>
+      <div class="stat-card"><div class="stat-num">${avgPct}%</div><div class="stat-label">Avg Completion</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--accent2)">🔥${state.streak}</div><div class="stat-label">Streak</div></div>
+    `;
+
+    const dayNames = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    const last7 = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = d.toDateString();
+      let pct = null;
+      if (ds === getToday()) {
+        const done = ALL_ITEMS.filter(({ id }) => state.checked[id]).length;
+        pct = Math.round((done / TOTAL) * 100);
+      } else {
+        const found = history.find(h => h.date === ds);
+        if (found) pct = found.pct;
+      }
+      last7.push({ label: dayNames[d.getDay()], pct });
+    }
+
+    document.getElementById('weeklyGrid').innerHTML = last7.map(({ label, pct }) => `
+      <div class="week-col">
+        <div class="week-bar-bg"><div class="week-bar-fill" style="height:${pct !== null ? pct : 0}%"></div></div>
+        <div class="week-day-label">${label}</div>
+        <div class="week-pct-label">${pct !== null ? pct + '%' : '—'}</div>
+      </div>
+    `).join('');
+  }
+
+  loadAll();
+  renderToday();
+</script>
+</body>
+</html>
